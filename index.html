@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="eu">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inekuazioak Planoan - M. Carmen Lopez</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f7ff; }
+
+    /* PANTAILA NAGUSIA */
+    #start-screen {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%);
+      display: flex; flex-direction: column;
+      justify-content: center; align-items: center;
+      padding: 20px; text-align: center;
+    }
+    .ibox {
+      background: #fff; padding: 40px; border-radius: 24px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+      max-width: 600px; border: 1px solid #c7d9f0; margin-bottom: 28px;
+    }
+    .ibox h2 { color: #1e40af; font-size: 2rem; margin-bottom: 16px; font-weight: 700; }
+    .ibox p { font-size: 1rem; line-height: 1.8; color: #374151; margin-bottom: 10px; }
+    .ibox .author { font-weight: 700; color: #111; margin: 14px 0 4px; font-size: 1rem; }
+    .ibox .ai { font-size: 0.78rem; color: #9ca3af; letter-spacing: 1px; }
+    .btn-start {
+      padding: 16px 52px; background: #fff; color: #111;
+      border: 2.5px solid #374151; border-radius: 12px; font-size: 1.1rem;
+      font-weight: 800; cursor: pointer; box-shadow: 0 3px 14px rgba(0,0,0,0.2);
+      transition: all 0.2s;
+    }
+    .btn-start:hover { background: #f3f4f6; box-shadow: 0 5px 18px rgba(0,0,0,0.25); }
+
+    /* JOKO EGITURA */
+    #game-layout {
+      display: none;
+      grid-template-columns: 180px 1fr 180px;
+      gap: 14px; padding: 14px;
+      min-height: 100vh;
+    }
+
+    /* Ezkerreko zutabea: inekuazioak */
+    #toolbox {
+      background: #1e40af; border-radius: 16px; padding: 14px 12px;
+      display: flex; flex-direction: column; gap: 6px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+    }
+    #toolbox h3 {
+      color: #fff; font-size: 0.9rem; text-align: center;
+      margin-bottom: 4px; font-weight: 700;
+    }
+    .ineq-card {
+      background: #fff; border: 2px solid #bfdbfe; padding: 8px 6px;
+      border-radius: 10px; cursor: grab; font-weight: 700; font-size: 0.82rem;
+      text-align: center; transition: all 0.2s; user-select: none; color: #1e3a8a;
+    }
+    .ineq-card:hover { border-color: #2563eb; background: #eff6ff; transform: scale(1.03); }
+    .ineq-card.used { opacity: 0.25; cursor: default; pointer-events: none; }
+
+    /* Erdiko zutabea: sistema kartesiarra */
+    #canvas-area {
+      background: #fff; border-radius: 16px; padding: 14px;
+      display: flex; flex-direction: column; align-items: center; gap: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+    canvas {
+      border: 1px solid #d1d5db; border-radius: 6px;
+      cursor: crosshair; display: block; max-width: 100%;
+    }
+    .btn-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+    .btn-check {
+      background: #1e40af; color: #fff; padding: 11px 20px; border: none;
+      cursor: pointer; border-radius: 9px; font-weight: 800; font-size: 0.85rem;
+      box-shadow: 0 3px 10px rgba(30,64,175,0.4); transition: background 0.2s;
+    }
+    .btn-check:hover { background: #1e3a8a; }
+    .btn-reset {
+      background: #374151; color: #fff; padding: 11px 20px; border: none;
+      cursor: pointer; border-radius: 9px; font-weight: 800; font-size: 0.85rem;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.25); transition: background 0.2s;
+    }
+    .btn-reset:hover { background: #111827; }
+    #msg { font-weight: 700; font-size: 0.9rem; text-align: center; min-height: 22px; }
+
+    /* Eskuineko zutabea: hautatutako inekuazioak */
+    #status-panel {
+      background: #fff; border-radius: 16px; padding: 14px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    #status-panel h3 {
+      color: #1e40af; font-size: 0.9rem; font-weight: 700;
+      border-bottom: 2px solid #bfdbfe; padding-bottom: 8px;
+    }
+    .active-ineq-blue {
+      background: #eff6ff; border: 2px solid #2563eb; border-radius: 9px;
+      padding: 9px 10px; color: #1e3a8a; font-weight: 700;
+      text-align: center; font-size: 0.9rem;
+    }
+    .active-ineq-green {
+      background: #f0fdf4; border: 2px solid #16a34a; border-radius: 9px;
+      padding: 9px 10px; color: #14532d; font-weight: 700;
+      text-align: center; font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HASIERAKO PANTAILA -->
+  <div id="start-screen">
+    <div class="ibox">
+      <h2>Inekuazioak Planoan</h2>
+      <p>Joko honek bi modo desberdin dauka jokatzeko:</p>
+      <p>Lehenengo modua: hartu inekuazio bat, arrastatu Sistema Koordenatuetara, eta markatu bere zonaldea, gero konproba dezakezu zure erantzuna.</p>
+      <p>Beste modu bat daukazu jolasteko: hartu bi ekuazio eta markatu komunean daukaten eremua, gero konprobatu erantzuna.</p>
+      <div class="author">M. Carmen Lopez</div>
+      <div class="ai">ADIMEN ARTIFIZIALAREN LAGUNTZAZ EGINDA</div>
+    </div>
+    <button class="btn-start" onclick="startGame()">HASI JOKOA</button>
+  </div>
+
+  <!-- JOKO EGITURA -->
+  <div id="game-layout">
+
+    <!-- Ezkerreko zutabea: 15 inekuazio nahasiak -->
+    <div id="toolbox">
+      <h3>Inekuazioak</h3>
+      <div class="ineq-card" id="i1"  data-a="1"  data-b="1"  data-c="4"  data-op="<="  data-strict="0">x + y ≤ 4</div>
+      <div class="ineq-card" id="i2"  data-a="1"  data-b="1"  data-c="3"  data-op="<"   data-strict="1">x + y &lt; 3</div>
+      <div class="ineq-card" id="i3"  data-a="1"  data-b="-1" data-c="0"  data-op=">="  data-strict="0">x − y ≥ 0</div>
+      <div class="ineq-card" id="i4"  data-a="1"  data-b="-1" data-c="1"  data-op=">"   data-strict="1">x − y &gt; 1</div>
+      <div class="ineq-card" id="i5"  data-a="0"  data-b="1"  data-c="2"  data-op=">="  data-strict="0">y ≥ 2</div>
+      <div class="ineq-card" id="i6"  data-a="0"  data-b="1"  data-c="1"  data-op=">"   data-strict="1">y &gt; 1</div>
+      <div class="ineq-card" id="i7"  data-a="2"  data-b="1"  data-c="6"  data-op="<="  data-strict="0">2x + y ≤ 6</div>
+      <div class="ineq-card" id="i8"  data-a="2"  data-b="1"  data-c="4"  data-op="<"   data-strict="1">2x + y &lt; 4</div>
+      <div class="ineq-card" id="i9"  data-a="-1" data-b="2"  data-c="2"  data-op="<="  data-strict="0">−x + 2y ≤ 2</div>
+      <div class="ineq-card" id="i10" data-a="1"  data-b="2"  data-c="8"  data-op="<="  data-strict="0">x + 2y ≤ 8</div>
+      <div class="ineq-card" id="i11" data-a="1"  data-b="0"  data-c="2"  data-op="<"   data-strict="1">x &lt; 2</div>
+      <div class="ineq-card" id="i12" data-a="1"  data-b="0"  data-c="-1" data-op=">="  data-strict="0">x ≥ −1</div>
+      <div class="ineq-card" id="i13" data-a="3"  data-b="-1" data-c="3"  data-op=">="  data-strict="0">3x − y ≥ 3</div>
+      <div class="ineq-card" id="i14" data-a="1"  data-b="-2" data-c="4"  data-op="<="  data-strict="0">x − 2y ≤ 4</div>
+      <div class="ineq-card" id="i15" data-a="2"  data-b="-1" data-c="2"  data-op=">"   data-strict="1">2x − y &gt; 2</div>
+    </div>
+
+    <!-- Erdiko zutabea: plano kartesiarra -->
+    <div id="canvas-area" ondrop="drop(event)" ondragover="allowDrop(event)">
+      <canvas id="cartesian" width="480" height="480"></canvas>
+      <div class="btn-row">
+        <button class="btn-check" onclick="checkAnswer()">ERANTZUNA KOMPROBATU</button>
+        <button class="btn-reset" onclick="location.reload()">BERRIRO HASI</button>
+      </div>
+      <div id="msg"></div>
+    </div>
+
+    <!-- Eskuineko zutabea: hautatutako inekuazioak -->
+    <div id="status-panel">
+      <h3>Hautatutako inekuazioak</h3>
+      <div id="active-list"></div>
+    </div>
+
+  </div>
+
+  <script>
+    const canvas = document.getElementById('cartesian');
+    const ctx = canvas.getContext('2d');
+    const W = 480, H = 480, unit = 24, ox = 240, oy = 240;
+    const LINE_COLORS = ['#2563eb', '#16a34a'];
+    let activeIneqs = [], userClick = null;
+
+    function startGame() {
+      document.getElementById('start-screen').style.display = 'none';
+      const gl = document.getElementById('game-layout');
+      gl.style.display = 'grid';
+      document.querySelectorAll('.ineq-card').forEach(el => {
+        el.setAttribute('draggable', 'true');
+        el.addEventListener('dragstart', drag);
+      });
+      drawBase();
+    }
+
+    function drawBase() {
+      ctx.clearRect(0, 0, W, H);
+      // Kuadrikulatu leuna
+      ctx.strokeStyle = '#f3f4f6'; ctx.lineWidth = 1;
+      for (let i = 0; i <= W; i += unit) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, H); ctx.stroke();
+      }
+      for (let i = 0; i <= H; i += unit) {
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(W, i); ctx.stroke();
+      }
+      // Ardatzak
+      ctx.setLineDash([]);
+      ctx.strokeStyle = '#6b7280'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(ox, 0); ctx.lineTo(ox, H); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, oy); ctx.lineTo(W, oy); ctx.stroke();
+      // Geziak
+      ctx.fillStyle = '#6b7280';
+      ctx.beginPath(); ctx.moveTo(ox, 4); ctx.lineTo(ox-5, 14); ctx.lineTo(ox+5, 14); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(W-4, oy); ctx.lineTo(W-14, oy-5); ctx.lineTo(W-14, oy+5); ctx.fill();
+      // Etiketak
+      ctx.fillStyle = '#374151'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center';
+      for (let n = -9; n <= 9; n++) {
+        if (n === 0) continue;
+        const px = ox + n * unit;
+        if (px > 8 && px < W - 8) ctx.fillText(n, px, oy + 14);
+      }
+      ctx.textAlign = 'right';
+      for (let n = -9; n <= 9; n++) {
+        if (n === 0) continue;
+        const py = oy - n * unit;
+        if (py > 8 && py < H - 8) ctx.fillText(n, ox - 5, py + 4);
+      }
+      // Ardatz izenak
+      ctx.font = 'bold 12px sans-serif'; ctx.fillStyle = '#374151';
+      ctx.textAlign = 'center'; ctx.fillText('x', W - 8, oy - 8);
+      ctx.fillText('y', ox + 10, 10);
+      // Lerro aktiboak
+      activeIneqs.forEach((ineq, idx) => drawLine(ineq, idx));
+    }
+
+    function drawLine(ineq, idx) {
+      ctx.strokeStyle = LINE_COLORS[idx] || '#2563eb';
+      ctx.lineWidth = 2.5;
+      ctx.setLineDash(ineq.strict ? [10, 6] : []);
+      ctx.beginPath();
+      if (ineq.b !== 0) {
+        const x1 = -11, y1 = (ineq.c - ineq.a * x1) / ineq.b;
+        const x2 = 11,  y2 = (ineq.c - ineq.a * x2) / ineq.b;
+        ctx.moveTo(ox + x1 * unit, oy - y1 * unit);
+        ctx.lineTo(ox + x2 * unit, oy - y2 * unit);
+      } else {
+        const x = ineq.c / ineq.a;
+        ctx.moveTo(ox + x * unit, 0); ctx.lineTo(ox + x * unit, H);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    function allowDrop(ev) { ev.preventDefault(); }
+    function drag(ev) { ev.dataTransfer.setData("id", ev.target.id); }
+
+    function drop(ev) {
+      ev.preventDefault();
+      if (activeIneqs.length >= 2) return;
+      const id = ev.dataTransfer.getData("id");
+      const el = document.getElementById(id);
+      if (!el || el.classList.contains('used')) return;
+      const ineq = {
+        a: +el.dataset.a, b: +el.dataset.b, c: +el.dataset.c,
+        op: el.dataset.op, strict: el.dataset.strict === "1", txt: el.innerText
+      };
+      const idx = activeIneqs.length;
+      activeIneqs.push(ineq);
+      el.classList.add('used');
+      const cssClass = idx === 0 ? 'active-ineq-blue' : 'active-ineq-green';
+      const borderStyle = ineq.strict ? 'border-style: dashed;' : '';
+      document.getElementById('active-list').innerHTML +=
+        `<div class="${cssClass}" style="${borderStyle}">${ineq.txt}</div>`;
+      drawBase();
+    }
+
+    canvas.addEventListener('click', e => {
+      if (activeIneqs.length === 0) return;
+      const r = canvas.getBoundingClientRect();
+      const scaleX = W / r.width, scaleY = H / r.height;
+      userClick = { x: (e.clientX - r.left) * scaleX, y: (e.clientY - r.top) * scaleY };
+      drawBase();
+      paintRegion(userClick.x, userClick.y, "rgba(30,64,175,0.4)");
+    });
+
+    function paintRegion(sx, sy, color) {
+      for (let x = 0; x < W; x += 2) {
+        for (let y = 0; y < H; y += 2) {
+          if (sameRegion(x, y, sx, sy)) {
+            ctx.fillStyle = color; ctx.fillRect(x, y, 2, 2);
+          }
+        }
+      }
+    }
+
+    function sameRegion(x, y, sx, sy) {
+      return activeIneqs.every(n => {
+        const f = (px, py) => n.a * ((px - ox) / unit) + n.b * ((oy - py) / unit) - n.c;
+        return Math.sign(f(x, y)) === Math.sign(f(sx, sy)) || Math.abs(f(x, y)) < 0.06;
+      });
+    }
+
+    function eval_ineq(n, val) {
+      if (n.op === "<=") return val <= n.c;
+      if (n.op === ">=") return val >= n.c;
+      if (n.op === "<")  return val < n.c;
+      if (n.op === ">")  return val > n.c;
+      return false;
+    }
+
+    function checkAnswer() {
+      if (!userClick) {
+        document.getElementById('msg').innerHTML =
+          "<span style='color:#6b7280'>Lehenengo klikatu planoaren gainean.</span>";
+        return;
+      }
+      const cx = (userClick.x - ox) / unit;
+      const cy = (oy - userClick.y) / unit;
+      const win = activeIneqs.every(n => eval_ineq(n, n.a * cx + n.b * cy));
+      const msg = document.getElementById('msg');
+      if (win) {
+        msg.innerHTML = "<span style='color:#16a34a'>Bikain! Asmatu duzu! ✓</span>";
+      } else {
+        msg.innerHTML = "<span style='color:#dc2626'>Okerra! Gorriz markatutakoa da zonalde zuzena.</span>";
+        for (let x = 0; x < W; x += 3) {
+          for (let y = 0; y < H; y += 3) {
+            const cx2 = (x - ox) / unit, cy2 = (oy - y) / unit;
+            if (activeIneqs.every(n => eval_ineq(n, n.a * cx2 + n.b * cy2))) {
+              ctx.fillStyle = "rgba(239,68,68,0.45)"; ctx.fillRect(x, y, 3, 3);
+            }
+          }
+        }
+      }
+    }
+  </script>
+</body>
+</html>
